@@ -1,6 +1,14 @@
-export const conf={
-    DB_NAME :"Backend",
-    MONGODB_URI:process.env.MONGODB_URI,
-    PORT:process.env.PORT,
-    CORS_ORIGIN:process.env.CORS_ORIGIN,
+export const conf = {
+    DB_NAME: "Backend",
+    MONGODB_URI: process.env.MONGODB_URI,
+    PORT: process.env.PORT,
+    CORS_ORIGIN: process.env.CORS_ORIGIN,
+    ACCESS_TOKEN_SECRET: process.env.ACCESS_TOKEN_SECRET,
+    ACCESS_TOKEN_EXPIRY: process.env.ACCESS_TOKEN_EXPIRY,
+    REFRESH_TOKEN_SECRET: process.env.REFRESH_TOKEN_SECRET,
+    REFRESH_TOKEN_EXPIRY: process.env.REFRESH_TOKEN_EXPIRY,
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_CLOUD_API_KEY: process.env.CLOUDINARY_CLOUD_API_KEY,
+    CLOUDINARY_CLOUD_SECRET_KEY: process.env.CLOUDINARY_CLOUD_SECRET_KEY,
+    CLOUDINARY_URL: process.env.CLOUDINARY_URL
 }
