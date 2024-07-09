@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { conf } from "../constants.js";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
@@ -223,11 +224,11 @@ export const updateAccountDetails = asyncHandler(async (req, res) => {
     ).select("-password -refreshToken");
     if (!user) throw new ApiError(500, "Something went wrong while updating account details");
     return res
-    .status(200)
-    .json(new ApiResponse(200, user, "Account details updated successfully"))
+        .status(200)
+        .json(new ApiResponse(200, user, "Account details updated successfully"))
 })
 
-export const updateUserAvatar=asyncHandler(async(req,res)=>{
+export const updateUserAvatar = asyncHandler(async (req, res) => {
     const avatarLocalPath = req.file?.path;
     if (!avatarLocalPath) {
         throw new ApiError(400, "Avatar file is required");
@@ -252,11 +253,11 @@ export const updateUserAvatar=asyncHandler(async(req,res)=>{
     ).select("-password -refreshToken");
     if (!user) throw new ApiError(500, "Something went wrong while updating account details");
     return res
-    .status(200)
-    .json(new ApiResponse(200, user, "Account details updated successfully"))
+        .status(200)
+        .json(new ApiResponse(200, user, "Account details updated successfully"))
 })
 
-export const updateUserCoverImage=asyncHandler(async(req, res)=>{
+export const updateUserCoverImage = asyncHandler(async (req, res) => {
     const coverImageLocalPath = req.file?.path;
     if (!coverImageLocalPath) {
         throw new ApiError(400, "Cover Image file is required");
@@ -281,6 +282,121 @@ export const updateUserCoverImage=asyncHandler(async(req, res)=>{
     ).select("-password -refreshToken");
     if (!user) throw new ApiError(500, "Something went wrong while updating account details");
     return res
+        .status(200)
+        .json(new ApiResponse(200, user, "Account details updated successfully"))
+})
+
+export const getUserChannelProfile = asyncHandler(async (req, res) => {
+    const { userName } = req.params;
+    if (!userName.trim()) {
+        throw new ApiError(400, "Username is required");
+    }
+    const channel = await User.aggregate([
+        {
+            $match: {
+                userName: userName?.toLowerCase()
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "channel",
+                as: "subscribers"
+            }
+        },
+        {
+            $lookup: {
+                from: "subscriptions",
+                localField: "_id",
+                foreignField: "subscriber",
+                as: "subscribedTo"
+            }
+        },
+        {
+            $addFields: {
+                channelSubscribedToCount: { $size: "$subscribedTo" },
+                subscribersCount: { $size: "$subscribers" },
+                isSubscribed: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                fullName: 1,
+                userName: 1,
+                avatar: 1,
+                channelSubscribedToCount: 1,
+                subscribersCount: 1,
+                isSubscribed: 1,
+                coverImage: 1,
+                email: 1,
+            }
+        }
+    ])
+    if (!channel?.length) {
+        throw new ApiError(400, "Channel not found");
+    }
+    return res
+        .status(200)
+        .json(new ApiResponse(200, channel[0], "User channel fetched successfully"))
+})
+
+export const getWatchHistory = asyncHandler(async (req, res) => {
+    const user = await User.aggregate(
+        [
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(req.user?._id)
+                }
+            },
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "watchHistory",
+                    foreignField: "_id",
+                    as: "watchHistory",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "owner",
+                                foreignField: "_id",
+                                as: "owner",
+                                pipeline: [
+                                    {
+                                        $project: {
+                                            fullName: 1,
+                                            userName: 1,
+                                            avatar: 1
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            $addFields:{
+                                owner:{
+                                    $first:"$owner"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+    )
+
+    if (!user?.length) {
+        throw new ApiError(400, "User not found");
+    }
+
+    return res
     .status(200)
-    .json(new ApiResponse(200, user, "Account details updated successfully"))
+    .json(new ApiResponse(200, user[0].watchHistory, "Watch history fetched successfully"))
 })
